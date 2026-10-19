@@ -225,6 +225,7 @@ function fromCanvas() {
   const root = d.documentElement.cloneNode(true);
   root.classList.remove('amuwa-preview'); if (!root.getAttribute('class')) root.removeAttribute('class');
   root.querySelectorAll('#amuwa-base,#amuwa-editor-css,[data-amuwa-ui]').forEach(e => e.remove());
+  root.querySelectorAll('[data-amuwa-unhide]').forEach(e => { e.setAttribute('hidden', ''); e.removeAttribute('data-amuwa-unhide'); });
   root.querySelectorAll('[data-amuwa-sel],[data-amuwa-hover]').forEach(e => { e.removeAttribute('data-amuwa-sel'); e.removeAttribute('data-amuwa-hover'); });
   root.querySelectorAll('[data-amuwa-ce]').forEach(e => { e.removeAttribute('contenteditable'); e.removeAttribute('data-amuwa-ce'); e.removeAttribute('spellcheck'); });
   root.querySelectorAll('script[data-amuwa-type]').forEach(s => { const t = s.getAttribute('data-amuwa-type'); if (t === '__none__') s.removeAttribute('type'); else s.setAttribute('type', t); s.removeAttribute('data-amuwa-type'); });
@@ -235,7 +236,7 @@ function fromCanvas() {
 function render(clean, keepScroll) {
   return new Promise(res => {
     let y = 0; try { y = keepScroll ? frame.contentWindow.scrollY : 0; } catch (e) {}
-    frame.onload = () => { wire(); if (keepScroll) try { frame.contentWindow.scrollTo(0, y); } catch (e) {} res(); };
+    frame.onload = () => { wire(); showPhotoPreviews(); if (keepScroll) try { frame.contentWindow.scrollTo(0, y); } catch (e) {} res(); };
     sel = null; editingEl = null;
     frame.srcdoc = toCanvas(clean);
   });
@@ -313,6 +314,7 @@ function pick(el) {
   if (el && (el.nodeType !== 1)) el = el.parentElement;
   if (el && el.closest && el.closest('svg') && el.tagName.toLowerCase() !== 'svg') el = el.closest('svg');
   if (el === d.body || el === d.documentElement) el = null;
+  if (el && el.closest && el.closest('[data-amuwa-ui]')) { stopEditing(); openTab('photos'); toast('Change these photos here'); return; }
   if (editingEl && el && editingEl.contains(el)) return;
   stopEditing();
   if (sel) sel.removeAttribute('data-amuwa-sel');
@@ -620,10 +622,40 @@ function tabTheme() {
 function photosScript() { const d = D(); return [...d.querySelectorAll('script')].find(s => /window\.SITE_PHOTOS\s*=/.test(s.textContent)); }
 function readPhotos() {
   const s = photosScript(); if (!s) return null;
-  const m = s.textContent.match(/window\.SITE_PHOTOS\s*=\s*(\{[\s\S]*\})\s*;?\s*$/m) || s.textContent.match(/window\.SITE_PHOTOS\s*=\s*(\{[\s\S]*?\});/);
-  if (!m) return null; try { return { s, data: JSON.parse(m[1]), raw: m[0] }; } catch (e) { return null; }
+  const t = s.textContent, at = t.search(/window\.SITE_PHOTOS\s*=\s*\{/); if (at < 0) return null;
+  const start = t.indexOf('{', at); let depth = 0, inStr = false, q = '', end = -1;
+  for (let i = start; i < t.length; i++) {
+    const c = t[i];
+    if (inStr) { if (c === '\\') i++; else if (c === q) inStr = false; continue; }
+    if (c === '"' || c === "'") { inStr = true; q = c; } else if (c === '{') depth++; else if (c === '}') { if (--depth === 0) { end = i + 1; break; } }
+  }
+  if (end < 0) return null;
+  try { return { s, data: JSON.parse(t.slice(start, end)), raw: t.slice(at, end) }; } catch (e) { return null; }
 }
-function writePhotos(p) { p.s.textContent = p.s.textContent.replace(p.raw, 'window.SITE_PHOTOS=' + JSON.stringify(p.data) + ';'); }
+// The site fills its photo slideshows and gallery with its own code, which is switched off while editing.
+// Show the same photos in the editor only (marked data-amuwa-ui, so they are never saved).
+function showPhotoPreviews() {
+  const d = D(), p = readPhotos(); if (!d || !p || !p.data.plan) return;
+  const plan = p.data.plan;
+  d.querySelectorAll('[data-slot]').forEach(el => {
+    const list = plan[el.getAttribute('data-slot')] || []; const first = srcOf(list[0]);
+    if (!first || el.querySelector('img')) return;
+    const im = d.createElement('img'); im.setAttribute('data-amuwa-ui', ''); im.className = 'on'; im.alt = ''; im.src = first;
+    if (!/ph-bg/.test(el.className)) im.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-1';
+    el.appendChild(im);
+  });
+  const gal = plan.gallery || []; if (!gal.length) return;
+  const track = d.querySelector('#galTrack,.gal-track,[id*="gallery"] ul,[class*="gallery"] ul');
+  if (!track || track.querySelector('img')) return;
+  gal.forEach(x => {
+    const li = d.createElement('li'); li.className = 'gal-item'; li.setAttribute('data-amuwa-ui', '');
+    li.innerHTML = '<figure><div class="gal-frame"><img alt="" src="' + esc(srcOf(x)) + '"></div></figure>';
+    track.appendChild(li);
+  });
+  const sec = track.closest('[hidden]'); if (sec) { sec.removeAttribute('hidden'); sec.setAttribute('data-amuwa-unhide', ''); }
+}
+async function photosChanged() { commit(); await render(current, true); tabPhotos(); }
+function writePhotos(p) { p.s.textContent = p.s.textContent.replace(p.raw, () => 'window.SITE_PHOTOS=' + JSON.stringify(p.data)); }
 const srcOf = x => typeof x === 'string' ? x : (x && x.src) || '';
 const GROUPS = { hero: 'Top slideshow', offer: 'Services background', events: 'Packages background', gallery: 'Photo gallery' };
 function tabPhotos() {
@@ -639,9 +671,9 @@ function tabPhotos() {
   }
   h += `<label class="lab">Photos on the page</label>${imgs.length ? `<div class="thumbs">${imgs.map((im, i) => `<div class="th"><img src="${esc(im.src)}" alt="" loading="lazy"><div class="acts"><button data-pi="${i}">Change</button><button data-go="${i}">Find</button></div></div>`).join('')}</div>` : '<p class="hint">No photos on the page yet. Add a "Photo + text" or "Photo gallery" section from Sections.</p>'}`;
   pBody.innerHTML = h;
-  pBody.querySelectorAll('[data-rep]').forEach(b => b.addEventListener('click', () => choosePhoto(async path => { const q = readPhotos(); q.data.plan[b.dataset.g][+b.dataset.rep] = path; swapAlt(q, path); writePhotos(q); commit(); tabPhotos(); })));
-  pBody.querySelectorAll('[data-rm]').forEach(b => b.addEventListener('click', () => { const q = readPhotos(); q.data.plan[b.dataset.g].splice(+b.dataset.rm, 1); writePhotos(q); commit(); tabPhotos(); toast('Photo removed'); }));
-  pBody.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => choosePhoto(async path => { const q = readPhotos(); q.data.plan[b.dataset.g].push(path); swapAlt(q, path); writePhotos(q); commit(); tabPhotos(); })));
+  pBody.querySelectorAll('[data-rep]').forEach(b => b.addEventListener('click', () => choosePhoto(async path => { const q = readPhotos(); q.data.plan[b.dataset.g][+b.dataset.rep] = path; swapAlt(q, path); writePhotos(q); photosChanged(); })));
+  pBody.querySelectorAll('[data-rm]').forEach(b => b.addEventListener('click', () => { const q = readPhotos(); q.data.plan[b.dataset.g].splice(+b.dataset.rm, 1); writePhotos(q); photosChanged(); toast('Photo removed'); }));
+  pBody.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => choosePhoto(async path => { const q = readPhotos(); q.data.plan[b.dataset.g].push(path); swapAlt(q, path); writePhotos(q); photosChanged(); })));
   pBody.querySelectorAll('[data-pi]').forEach(b => b.addEventListener('click', () => { const im = imgs[+b.dataset.pi]; choosePhoto(async path => { im.setAttribute('src', path); im.removeAttribute('srcset'); commit(); tabPhotos(); }); }));
   pBody.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { const im = imgs[+b.dataset.go]; im.scrollIntoView({ behavior: 'smooth', block: 'center' }); pick(im); }));
 }
