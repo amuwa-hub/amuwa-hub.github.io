@@ -1,0 +1,747 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Edit your website · Amuwa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0B1F4B;--navy-2:#13306f;--red:#E31E24;--red-ink:#b5161b;
+  --ink:#15171C;--ink-2:#5E636E;--line:#E3E6EB;--paper:#fff;--paper-2:#F5F7FA;
+  --ok:#12A150;--warn:#8A5A00;
+  --r:12px;--top:56px;--nav:62px;
+  font-family:Inter,"Segoe UI",system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--paper-2);color:var(--ink);-webkit-text-size-adjust:100%}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.hidden{display:none!important}
+
+/* ---------- top bar ---------- */
+.top{position:fixed;inset:0 0 auto 0;height:calc(var(--top) + env(safe-area-inset-top));padding:env(safe-area-inset-top) 12px 0;
+  display:flex;align-items:center;gap:8px;background:var(--navy);color:#fff;z-index:30}
+.brand{display:flex;flex-direction:column;min-width:0;flex:1}
+.brand small{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;opacity:.7}
+.brand b{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb{height:38px;min-width:38px;padding:0 10px;border:0;border-radius:10px;background:rgba(255,255,255,.1);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:14px;font-weight:600}
+.tb:disabled{opacity:.35}
+.tb svg{width:18px;height:18px}
+.tb.pub{background:var(--red);padding:0 14px}
+.tb.pub[data-dirty="1"]::after{content:"";width:7px;height:7px;border-radius:50%;background:#fff;margin-left:2px}
+.tb .lbl{display:none}
+@media (min-width:640px){.tb .lbl{display:inline}}
+
+/* ---------- layout ---------- */
+.stage{position:fixed;left:0;right:0;top:calc(var(--top) + env(safe-area-inset-top));bottom:calc(var(--nav) + env(safe-area-inset-bottom));
+  display:flex;justify-content:center;background:#e9ecf1}
+.stage iframe{border:0;width:100%;height:100%;background:#fff;transition:width .25s}
+.stage.phone iframe{width:390px;max-width:100%;box-shadow:0 0 0 1px var(--line),0 10px 40px rgba(0,0,0,.12)}
+.panel{position:fixed;left:0;right:0;bottom:calc(var(--nav) + env(safe-area-inset-bottom));max-height:58vh;overflow:auto;
+  background:#fff;border-radius:18px 18px 0 0;box-shadow:0 -8px 30px rgba(10,20,40,.18);z-index:20;
+  transform:translateY(105%);transition:transform .28s cubic-bezier(.2,.9,.25,1);overscroll-behavior:contain}
+.panel.open{transform:none}
+.panel-h{position:sticky;top:0;background:#fff;display:flex;align-items:center;gap:8px;padding:12px 14px 8px;border-bottom:1px solid var(--line);z-index:2}
+.panel-h h2{margin:0;font-size:16px;font-weight:700;flex:1}
+.x{border:0;background:var(--paper-2);width:34px;height:34px;border-radius:50%;font-size:18px;line-height:1}
+.panel-b{padding:12px 14px 18px}
+.nav{position:fixed;left:0;right:0;bottom:0;height:calc(var(--nav) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);
+  background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(6,1fr);z-index:25}
+.nav button{border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;font-weight:600;color:var(--ink-2)}
+.nav button svg{width:22px;height:22px}
+.nav button[aria-current="true"]{color:var(--red)}
+.nav .ai-tab svg{color:#fff;background:var(--red);border-radius:10px;padding:4px;width:30px;height:30px}
+
+@media (min-width:900px){
+  :root{--nav:0px}
+  .stage{right:380px}
+  .panel{left:auto;right:0;top:calc(var(--top) + env(safe-area-inset-top));bottom:0;width:380px;max-height:none;border-radius:0;
+    transform:none;box-shadow:-1px 0 0 var(--line);padding-top:56px}
+  .panel-h{position:fixed;top:calc(var(--top) + env(safe-area-inset-top));right:0;width:380px;height:56px;border-bottom:1px solid var(--line)}
+  .nav{top:calc(var(--top) + env(safe-area-inset-top));bottom:auto;left:auto;right:0;width:380px;height:56px;padding:0;grid-template-columns:repeat(6,1fr);z-index:26;border-top:0;border-bottom:1px solid var(--line)}
+  .nav button{flex-direction:row;gap:5px}
+  .nav button span{display:none}
+  .panel{padding-top:112px}
+  .panel-h{top:calc(var(--top) + 56px + env(safe-area-inset-top))}
+  .x.close-sheet{display:none}
+}
+
+/* ---------- controls ---------- */
+.hint{color:var(--ink-2);font-size:14px;line-height:1.5;margin:4px 0 12px}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.btn{min-height:42px;padding:0 14px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:14px;font-weight:600;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn:active{transform:scale(.97)}
+.btn.pri{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn.red{background:var(--red);border-color:var(--red);color:#fff}
+.btn.danger{color:var(--red-ink);border-color:#f3c9ca}
+.btn.danger.armed{background:var(--red);color:#fff;border-color:var(--red)}
+.btn.sm{min-height:36px;padding:0 10px;font-size:13px}
+.btn.full{width:100%}
+.btn svg{width:17px;height:17px}
+.lab{display:block;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2);margin:14px 0 6px}
+.fld{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:16px}
+textarea.fld{min-height:96px;resize:vertical;line-height:1.45}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:#fff;min-width:42px;height:40px;font-weight:700}
+.seg button+button{border-left:1px solid var(--line)}
+.sw{display:flex;align-items:center;gap:8px;padding:6px 10px 6px 6px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:13px;font-weight:600}
+.sw input[type=color]{width:30px;height:30px;border:0;padding:0;background:none;border-radius:8px}
+.chip{border:1px solid var(--line);background:var(--paper-2);border-radius:999px;padding:8px 12px;font-size:13px;text-align:left}
+.list{display:flex;flex-direction:column;gap:6px}
+.item{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.item .nm{flex:1;min-width:0;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:0;background:none;text-align:left;padding:6px 4px}
+.item.off .nm{opacity:.45;text-decoration:line-through}
+.ib{width:34px;height:34px;border:1px solid var(--line);border-radius:9px;background:#fff;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.ib svg{width:16px;height:16px}
+.thumbs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.th{position:relative;border-radius:10px;overflow:hidden;background:var(--paper-2);aspect-ratio:1;border:1px solid var(--line)}
+.th img{width:100%;height:100%;object-fit:cover;display:block}
+.th .acts{position:absolute;inset:auto 4px 4px 4px;display:flex;gap:4px}
+.th .acts button{flex:1;height:28px;border:0;border-radius:7px;background:rgba(0,0,0,.66);color:#fff;font-size:12px;font-weight:600}
+.th.add{display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--ink-2);font-size:13px;border-style:dashed}
+.tpl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tpl button{min-height:64px;border:1px solid var(--line);border-radius:12px;background:#fff;text-align:left;padding:10px;font-size:13px;font-weight:600;line-height:1.3}
+.tpl button small{display:block;font-weight:400;color:var(--ink-2);margin-top:2px}
+.selname{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.selname b{font-size:15px}
+.selname .tag{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#fff;background:var(--red);padding:3px 8px;border-radius:999px}
+.ver{display:flex;align-items:center;gap:8px;padding:10px;border:1px solid var(--line);border-radius:12px}
+.ver div{flex:1;min-width:0}
+.ver b{display:block;font-size:14px}
+.ver small{display:block;color:var(--ink-2);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ai-msg{padding:12px;border-radius:12px;background:var(--paper-2);font-size:14px;line-height:1.45;margin-top:10px}
+.ai-msg.ok{background:#e3f5ea;color:#0f5a32}
+.ai-msg.err{background:#fde7e7;color:#8c1217}
+
+/* ---------- overlays ---------- */
+.cover{position:fixed;inset:0;background:var(--navy);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:60;text-align:center;padding:24px}
+.cover h1{margin:0;font-size:22px}
+.cover p{margin:0;opacity:.8;max-width:420px;line-height:1.5}
+.spin{width:36px;height:36px;border-radius:50%;border:3px solid rgba(255,255,255,.25);border-top-color:#fff;animation:sp 0.9s linear infinite}
+.spin.dark{border-color:rgba(11,31,75,.15);border-top-color:var(--navy);width:22px;height:22px;border-width:2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.toast{position:fixed;left:50%;top:calc(var(--top) + env(safe-area-inset-top) + 10px);transform:translate(-50%,-20px);opacity:0;pointer-events:none;
+  background:var(--ink);color:#fff;padding:10px 14px;border-radius:12px;font-size:14px;font-weight:600;z-index:70;transition:.25s;max-width:calc(100% - 24px);box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast a{color:#9ff0c2}
+.banner{position:fixed;left:12px;right:12px;top:calc(var(--top) + env(safe-area-inset-top) + 10px);z-index:40;background:#fff;border:1px solid var(--line);
+  border-radius:14px;padding:12px;box-shadow:0 10px 30px rgba(0,0,0,.15);font-size:14px}
+@media (min-width:900px){.banner{right:392px}}
+.busy{position:fixed;inset:0;background:rgba(11,31,75,.55);display:flex;align-items:center;justify-content:center;z-index:65}
+.busy .card{background:#fff;border-radius:16px;padding:20px;display:flex;align-items:center;gap:12px;font-weight:600;max-width:320px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<div class="cover" id="cover"><div class="spin"></div><h1>Opening your website…</h1><p>Please wait a few seconds.</p></div>
+
+<header class="top">
+  <div class="brand"><small>Edit your website</small><b id="bizName">…</b></div>
+  <button class="tb" id="undoBtn" title="Undo" aria-label="Undo" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button>
+  <button class="tb" id="redoBtn" title="Redo" aria-label="Redo" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button>
+  <button class="tb" id="viewBtn" title="Preview" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><span class="lbl">Preview</span></button>
+  <button class="tb hidden" id="deviceBtn" title="Phone / computer view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></button>
+  <button class="tb pub" id="pubBtn" data-dirty="0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg><span>Publish</span></button>
+</header>
+
+<main class="stage" id="stage"><iframe id="frame" title="Your website"></iframe></main>
+
+<aside class="panel" id="panel" aria-live="polite">
+  <div class="panel-h"><h2 id="panelTitle">Edit</h2><button class="x close-sheet" id="closePanel" aria-label="Close">×</button></div>
+  <div class="panel-b" id="panelBody"></div>
+</aside>
+
+<nav class="nav" id="nav">
+  <button data-tab="edit" aria-current="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span>Edit</span></button>
+  <button data-tab="sections"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="6" rx="1.5"/><rect x="3" y="12" width="18" height="9" rx="1.5"/></svg><span>Sections</span></button>
+  <button data-tab="theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2a10 10 0 0 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.4A5.6 5.6 0 0 0 22 9.8C22 5.5 17.5 2 12 2z"/></svg><span>Colours</span></button>
+  <button data-tab="photos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg><span>Photos</span></button>
+  <button data-tab="ai" class="ai-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg><span>Ask AI</span></button>
+  <button data-tab="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg><span>History</span></button>
+</nav>
+
+<input type="file" id="fileIn" accept="image/*" class="hidden">
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(() => {
+'use strict';
+const API = 'https://koku.app.n8n.cloud/webhook/site-editor';
+const TOKEN = new URLSearchParams(location.search).get('t') || '';
+const $ = s => document.querySelector(s);
+const frame = $('#frame'), panel = $('#panel'), pBody = $('#panelBody'), pTitle = $('#panelTitle');
+const isDesk = () => matchMedia('(min-width:900px)').matches;
+
+let BASE = '', LIVE = '', BUSINESS = '';
+let current = '';            // last committed clean HTML
+let published = '';          // HTML that is live now
+const undoS = [], redoS = [];
+let sel = null, tab = 'edit', previewMode = false, editingEl = null, editStart = '';
+
+/* ---------------- helpers ---------------- */
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function toast(msg, ms = 2600) { const t = $('#toast'); t.innerHTML = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), ms); }
+function busy(msg) { const d = document.createElement('div'); d.className = 'busy'; d.innerHTML = '<div class="card"><div class="spin dark"></div><span>' + esc(msg) + '</span></div>'; document.body.appendChild(d); return () => d.remove(); }
+async function api(action, data) {
+  const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ token: TOKEN, action }, data || {})) });
+  let j = null; try { j = await r.json(); } catch (e) { throw new Error('The server did not answer. Please try again.'); }
+  if (!r.ok) throw new Error((j && j.error) || 'Something went wrong. Please try again.');
+  return j;
+}
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+};
+const DRAFT = 'amuwa-draft-' + TOKEN;
+
+/* ---------------- canvas in / out ---------------- */
+const CANVAS_CSS = `
+[data-amuwa-sel]{outline:3px solid #E31E24!important;outline-offset:2px!important;cursor:text}
+[data-amuwa-hover]:not([data-amuwa-sel]){outline:2px dashed rgba(227,30,36,.55)!important;outline-offset:2px!important;cursor:pointer}
+[contenteditable="true"]{cursor:text;caret-color:#E31E24}
+.rv,.rv-img,.rv-scale,.load,[class*="reveal"]{opacity:1!important;transform:none!important;clip-path:none!important;animation:none!important}
+html.amuwa-preview [data-amuwa-sel],html.amuwa-preview [data-amuwa-hover]{outline:none!important}
+#amuwa-preview-bar{display:none!important}`;
+
+function toCanvas(clean) {
+  const doc = new DOMParser().parseFromString(clean, 'text/html');
+  doc.querySelectorAll('#amuwa-preview-bar').forEach(e => e.remove());
+  doc.querySelectorAll('script').forEach(s => { s.setAttribute('data-amuwa-type', s.hasAttribute('type') ? s.getAttribute('type') : '__none__'); s.setAttribute('type', 'text/x-amuwa-off'); });
+  doc.querySelectorAll('*').forEach(el => { for (const a of [...el.attributes]) if (/^on[a-z]+$/i.test(a.name)) { el.setAttribute('data-amuwa-' + a.name.toLowerCase(), a.value); el.removeAttribute(a.name); } });
+  const base = doc.createElement('base'); base.id = 'amuwa-base'; base.href = BASE; doc.head.prepend(base);
+  const st = doc.createElement('style'); st.id = 'amuwa-editor-css'; st.textContent = CANVAS_CSS; doc.head.appendChild(st);
+  return '<!doctype html>\n' + doc.documentElement.outerHTML;
+}
+function fromCanvas() {
+  const d = frame.contentDocument; if (!d || !d.documentElement) return current;
+  const root = d.documentElement.cloneNode(true);
+  root.classList.remove('amuwa-preview'); if (!root.getAttribute('class')) root.removeAttribute('class');
+  root.querySelectorAll('#amuwa-base,#amuwa-editor-css,[data-amuwa-ui]').forEach(e => e.remove());
+  root.querySelectorAll('[data-amuwa-sel],[data-amuwa-hover]').forEach(e => { e.removeAttribute('data-amuwa-sel'); e.removeAttribute('data-amuwa-hover'); });
+  root.querySelectorAll('[data-amuwa-ce]').forEach(e => { e.removeAttribute('contenteditable'); e.removeAttribute('data-amuwa-ce'); e.removeAttribute('spellcheck'); });
+  root.querySelectorAll('script[data-amuwa-type]').forEach(s => { const t = s.getAttribute('data-amuwa-type'); if (t === '__none__') s.removeAttribute('type'); else s.setAttribute('type', t); s.removeAttribute('data-amuwa-type'); });
+  root.querySelectorAll('*').forEach(el => { for (const a of [...el.attributes]) if (/^data-amuwa-on[a-z]+$/.test(a.name)) { el.setAttribute(a.name.slice(11), a.value); el.removeAttribute(a.name); } });
+  root.querySelectorAll('[style=""]').forEach(e => e.removeAttribute('style'));
+  return '<!doctype html>\n' + root.outerHTML;
+}
+function render(clean, keepScroll) {
+  return new Promise(res => {
+    let y = 0; try { y = keepScroll ? frame.contentWindow.scrollY : 0; } catch (e) {}
+    frame.onload = () => { wire(); if (keepScroll) try { frame.contentWindow.scrollTo(0, y); } catch (e) {} res(); };
+    sel = null; editingEl = null;
+    frame.srcdoc = toCanvas(clean);
+  });
+}
+
+/* ---------------- history ---------------- */
+function commit(silent) {
+  const now = fromCanvas();
+  if (now === current) return false;
+  undoS.push(current); if (undoS.length > 60) undoS.shift();
+  redoS.length = 0; current = now; afterChange(); return true;
+}
+function afterChange() {
+  $('#undoBtn').disabled = !undoS.length; $('#redoBtn').disabled = !redoS.length;
+  const dirty = current !== published; $('#pubBtn').dataset.dirty = dirty ? '1' : '0';
+  if (dirty) store.set(DRAFT, { html: current, at: Date.now() }); else store.del(DRAFT);
+}
+async function undo() { stopEditing(); commit(); if (!undoS.length) return; redoS.push(current); current = undoS.pop(); await render(current, true); afterChange(); refreshTab(); }
+async function redo() { stopEditing(); if (!redoS.length) return; undoS.push(current); current = redoS.pop(); await render(current, true); afterChange(); refreshTab(); }
+
+/* ---------------- canvas wiring ---------------- */
+function D() { return frame.contentDocument; }
+function wire() {
+  const d = D(); if (!d) return;
+  if (previewMode) d.documentElement.classList.add('amuwa-preview');
+  d.addEventListener('click', e => {
+    const a = e.target.closest && e.target.closest('a,button,label,summary');
+    if (previewMode) { if (a && a.tagName === 'A') e.preventDefault(); return; }
+    e.preventDefault(); e.stopPropagation();
+    pick(e.target);
+  }, true);
+  d.addEventListener('submit', e => e.preventDefault(), true);
+  d.addEventListener('mouseover', e => { if (previewMode) return; d.querySelectorAll('[data-amuwa-hover]').forEach(x => x.removeAttribute('data-amuwa-hover')); if (e.target && e.target !== d.body && e.target !== d.documentElement) e.target.setAttribute('data-amuwa-hover', ''); });
+  d.addEventListener('mouseleave', () => d.querySelectorAll('[data-amuwa-hover]').forEach(x => x.removeAttribute('data-amuwa-hover')));
+  d.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
+    if (e.key === 'Escape') { stopEditing(); pick(null); }
+  });
+}
+
+const TEXT_TAGS = /^(H[1-6]|P|SPAN|A|LI|STRONG|EM|B|I|SMALL|LABEL|BUTTON|BLOCKQUOTE|FIGCAPTION|TD|TH|DT|DD|SUMMARY|CITE|Q|MARK|TIME|ADDRESS)$/;
+function isText(el) {
+  if (!el || !el.tagName) return false;
+  if (el.querySelector('img,svg,video,iframe,input,select,textarea,picture,canvas')) return false;
+  if (TEXT_TAGS.test(el.tagName)) return el.textContent.trim().length > 0;
+  return !el.children.length && el.textContent.trim().length > 0;
+}
+function kindOf(el) {
+  if (!el) return '';
+  const t = el.tagName;
+  if (t === 'IMG') return 'Photo';
+  if (t === 'A' || t === 'BUTTON') return el.textContent.trim() ? 'Button / link' : 'Link';
+  if (/^H[1-6]$/.test(t)) return 'Heading';
+  if (t === 'SECTION' || t === 'HEADER' || t === 'FOOTER' || t === 'NAV') return 'Section';
+  if (t === 'IFRAME') return 'Map / video';
+  if (t === 'svg' || t === 'SVG') return 'Icon';
+  if (isText(el)) return 'Text';
+  return 'Box';
+}
+function startEditing(el) {
+  if (!isText(el) || previewMode) return;
+  el.setAttribute('contenteditable', 'true'); el.setAttribute('data-amuwa-ce', ''); el.setAttribute('spellcheck', 'false');
+  editingEl = el; editStart = el.innerHTML;
+  el.addEventListener('blur', onBlur, { once: true });
+  setTimeout(() => { try { el.focus({ preventScroll: true }); } catch (e) {} }, 0);
+}
+function onBlur() { stopEditing(); }
+function stopEditing() {
+  const el = editingEl; if (!el) return; editingEl = null;
+  el.removeAttribute('contenteditable'); el.removeAttribute('data-amuwa-ce'); el.removeAttribute('spellcheck');
+  if (el.innerHTML !== editStart) commit();
+}
+function pick(el) {
+  const d = D(); if (!d) return;
+  if (el && (el.nodeType !== 1)) el = el.parentElement;
+  if (el && el.closest && el.closest('svg') && el.tagName.toLowerCase() !== 'svg') el = el.closest('svg');
+  if (el === d.body || el === d.documentElement) el = null;
+  if (editingEl && el && editingEl.contains(el)) return;
+  stopEditing();
+  if (sel) sel.removeAttribute('data-amuwa-sel');
+  sel = el;
+  if (sel) { sel.setAttribute('data-amuwa-sel', ''); startEditing(sel); openTab('edit'); keepVisible(sel); }
+  else if (tab === 'edit') showTab('edit');
+}
+function keepVisible(el) {
+  if (isDesk()) return;
+  try { const r = el.getBoundingClientRect(), h = frame.clientHeight; const sheet = panel.getBoundingClientRect().height || h * 0.5; if (r.top < 60 || r.bottom > h - sheet) frame.contentWindow.scrollBy({ top: r.top - 90, behavior: 'smooth' }); } catch (e) {}
+}
+
+/* ---------------- tabs ---------------- */
+const TITLES = { edit: 'Edit', sections: 'Sections', theme: 'Colours & fonts', photos: 'Photos', ai: 'Ask AI to change it', history: 'Saved versions' };
+function openTab(t) { tab = t; document.querySelectorAll('.nav button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === t ? 'true' : 'false')); showTab(t); panel.classList.add('open'); }
+function refreshTab() { if (panel.classList.contains('open') || isDesk()) showTab(tab); }
+function showTab(t) {
+  pTitle.textContent = TITLES[t];
+  ({ edit: tabEdit, sections: tabSections, theme: tabTheme, photos: tabPhotos, ai: tabAI, history: tabHistory })[t]();
+}
+document.querySelectorAll('.nav button').forEach(b => b.addEventListener('click', () => {
+  if (!isDesk() && tab === b.dataset.tab && panel.classList.contains('open')) { panel.classList.remove('open'); return; }
+  stopEditing(); openTab(b.dataset.tab);
+}));
+$('#closePanel').addEventListener('click', () => { panel.classList.remove('open'); });
+
+/* ---------------- icons ---------------- */
+const I = {
+  up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>',
+  down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>',
+  copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/></svg>',
+  eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  eyeoff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 18 18"/><path d="M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4.2M6.6 6.6A17 17 0 0 0 2 12s3.6 7 10 7a9.6 9.6 0 0 0 5.4-1.6"/></svg>',
+  img: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  outer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>'
+};
+
+/* ---------------- EDIT tab ---------------- */
+function rgb2hex(c) { const m = String(c).match(/rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)(?:[,\s/]+([\d.]+))?/); if (!m) return null; if (m[4] !== undefined && +m[4] < 1) return null; return '#' + [m[1], m[2], m[3]].map(n => (+n).toString(16).padStart(2, '0')).join(''); }
+function cs(el) { return frame.contentWindow.getComputedStyle(el); }
+function bgOf(el) { let e = el; while (e && e.nodeType === 1) { const h = rgb2hex(cs(e).backgroundColor); if (h) return h; e = e.parentElement; } return '#ffffff'; }
+function tabEdit() {
+  if (!sel || !sel.isConnected) {
+    sel = null;
+    pBody.innerHTML = `<p class="hint"><b>Tap anything on your website</b> to change it: words, photos, buttons, colours or whole sections.</p>
+      <div class="list">
+        <div class="item">✏️ <span class="hint" style="margin:0">Tap any text and type to change it.</span></div>
+        <div class="item">🖼️ <span class="hint" style="margin:0">Tap a photo, then <b>Change photo</b>.</span></div>
+        <div class="item">🧱 <span class="hint" style="margin:0">Use <b>Sections</b> to move, hide or add parts.</span></div>
+        <div class="item">✨ <span class="hint" style="margin:0">Or type what you want in <b>Ask AI</b>.</span></div>
+      </div>
+      <p class="hint" style="margin-top:14px">When you're happy, press <b>Publish</b>. Nothing changes on your live website until then.</p>`;
+    return;
+  }
+  const el = sel, k = kindOf(el), st = cs(el);
+  const linkEl = el.tagName === 'A' ? el : (el.closest('a') || null);
+  const bgImg = findBgImage(el);
+  let h = `<div class="selname"><span class="tag">${esc(k)}</span><b>${esc((el.textContent || el.getAttribute('alt') || '').trim().slice(0, 40) || el.tagName.toLowerCase())}</b></div>`;
+  if (isText(el)) {
+    h += `<p class="hint" style="margin-top:0">Type on the website to change the words.</p>
+      <div class="row">
+        <div class="seg"><button data-cmd="bold" title="Bold"><b>B</b></button><button data-cmd="italic" title="Italic"><i>I</i></button><button data-cmd="underline" title="Underline"><u>U</u></button></div>
+        <div class="seg"><button data-size="-1" title="Smaller">A−</button><button data-size="1" title="Bigger">A+</button></div>
+        <div class="seg"><button data-align="left" title="Left">⇤</button><button data-align="center" title="Centre">≡</button><button data-align="right" title="Right">⇥</button></div>
+      </div>
+      <div class="row"><label class="sw"><input type="color" id="cText" value="${rgb2hex(st.color) || '#111111'}">Text colour</label>
+      <label class="sw"><input type="color" id="cBg" value="${bgOf(el)}">Background</label></div>`;
+  } else if (el.tagName === 'IMG') {
+    h += `<div class="row"><button class="btn pri" id="repImg">${I.img} Change photo</button></div>
+      <label class="lab" for="altIn">Describe the photo (for Google)</label><input class="fld" id="altIn" value="${esc(el.getAttribute('alt') || '')}">`;
+  } else {
+    h += `<div class="row"><label class="sw"><input type="color" id="cBg" value="${bgOf(el)}">Background</label>
+      <label class="sw"><input type="color" id="cText" value="${rgb2hex(st.color) || '#111111'}">Text colour</label></div>`;
+  }
+  if (bgImg) h += `<div class="row"><button class="btn" id="repBg">${I.img} Change background photo</button></div>`;
+  if (linkEl) {
+    const p = parseLink(linkEl.getAttribute('href') || '');
+    h += `<label class="lab">When someone taps it</label>
+      <div class="row" style="margin-bottom:6px"><select class="fld" id="lkType" style="flex:1">
+        <option value="tel" ${p.t === 'tel' ? 'selected' : ''}>Call a phone number</option>
+        <option value="wa" ${p.t === 'wa' ? 'selected' : ''}>Open WhatsApp chat</option>
+        <option value="sec" ${p.t === 'sec' ? 'selected' : ''}>Go to a section of this page</option>
+        <option value="url" ${p.t === 'url' ? 'selected' : ''}>Open a website / Instagram / Maps</option>
+        <option value="mail" ${p.t === 'mail' ? 'selected' : ''}>Send an email</option>
+      </select></div>
+      <div class="row" id="lkValWrap"></div>`;
+  }
+  h += `<label class="lab">Move & arrange</label>
+    <div class="row">
+      <button class="btn sm" id="mvUp">${I.up} Up</button><button class="btn sm" id="mvDn">${I.down} Down</button>
+      <button class="btn sm" id="dup">${I.copy} Copy</button>
+      <button class="btn sm danger" id="del">${I.trash} Delete</button>
+    </div>
+    <div class="row">
+      <div class="seg"><button data-pad="-1" title="Less space">− Space</button><button data-pad="1" title="More space">+ Space</button></div>
+      <button class="btn sm" id="bigger">${I.outer} Select bigger area</button>
+    </div>`;
+  pBody.innerHTML = h;
+
+  pBody.querySelectorAll('[data-cmd]').forEach(b => b.addEventListener('mousedown', e => { e.preventDefault(); if (!editingEl) startEditing(el); D().execCommand(b.dataset.cmd); }));
+  pBody.querySelectorAll('[data-size]').forEach(b => b.addEventListener('click', () => { const z = parseFloat(el.style.zoom || '1') + (+b.dataset.size) * 0.1; el.style.zoom = Math.max(0.5, Math.min(2.5, z)).toFixed(2); commit(); }));
+  pBody.querySelectorAll('[data-align]').forEach(b => b.addEventListener('click', () => { el.style.textAlign = b.dataset.align; commit(); }));
+  pBody.querySelectorAll('[data-pad]').forEach(b => b.addEventListener('click', () => {
+    const s = cs(el), d = (+b.dataset.pad) * 12;
+    el.style.paddingTop = Math.max(0, parseFloat(s.paddingTop) + d) + 'px'; el.style.paddingBottom = Math.max(0, parseFloat(s.paddingBottom) + d) + 'px'; commit();
+  }));
+  const ct = $('#cText'); if (ct) ct.addEventListener('input', () => { el.style.color = ct.value; }), ct.addEventListener('change', () => commit());
+  const cb = $('#cBg'); if (cb) cb.addEventListener('input', () => { el.style.background = cb.value; }), cb.addEventListener('change', () => commit());
+  const ri = $('#repImg'); if (ri) ri.addEventListener('click', () => choosePhoto(async path => { el.setAttribute('src', path); el.removeAttribute('srcset'); el.closest('picture') && el.closest('picture').querySelectorAll('source').forEach(s => s.remove()); commit(); }));
+  const alt = $('#altIn'); if (alt) alt.addEventListener('change', () => { el.setAttribute('alt', alt.value); commit(); });
+  const rb = $('#repBg'); if (rb) rb.addEventListener('click', () => choosePhoto(async path => { bgImg.style.backgroundImage = `url('${path}')`; commit(); }));
+  if (linkEl) wireLink(linkEl);
+  $('#mvUp').addEventListener('click', () => move(el, -1));
+  $('#mvDn').addEventListener('click', () => move(el, 1));
+  $('#dup').addEventListener('click', () => { stopEditing(); const c = el.cloneNode(true); c.removeAttribute('data-amuwa-sel'); c.querySelectorAll('[id]').forEach(n => n.id += '-copy'); if (c.id) c.id += '-copy'; el.after(c); commit(); pick(c); toast('Copied'); });
+  armDelete($('#del'), () => { stopEditing(); const p = el.parentElement; el.remove(); sel = null; commit(); toast('Deleted · tap Undo to bring it back'); showTab('edit'); });
+  $('#bigger').addEventListener('click', () => { const p = el.parentElement; if (p && p !== D().body) pick(p); });
+}
+function armDelete(btn, fn) { btn.addEventListener('click', () => { if (btn.classList.contains('armed')) { fn(); return; } btn.classList.add('armed'); btn.innerHTML = I.trash + ' Tap again to delete'; setTimeout(() => { if (btn.isConnected) { btn.classList.remove('armed'); btn.innerHTML = I.trash + ' Delete'; } }, 3000); }); }
+function move(el, dir) {
+  stopEditing();
+  const skip = n => n && (/^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE|LINK|META)$/.test(n.tagName) || n.id === 'amuwa-base');
+  let n = dir < 0 ? el.previousElementSibling : el.nextElementSibling;
+  while (skip(n)) n = dir < 0 ? n.previousElementSibling : n.nextElementSibling;
+  if (!n) { toast(dir < 0 ? 'Already at the top here' : 'Already at the bottom here'); return; }
+  dir < 0 ? n.before(el) : n.after(el);
+  commit(); keepVisible(el);
+}
+function findBgImage(el) { let e = el; for (let i = 0; i < 3 && e && e.nodeType === 1; i++, e = e.parentElement) { if (e.style && /url\(/.test(e.style.backgroundImage || '')) return e; } return null; }
+function parseLink(h) {
+  if (/^tel:/i.test(h)) return { t: 'tel', v: h.replace(/^tel:/i, '') };
+  const wa = h.match(/^https?:\/\/(?:wa\.me|api\.whatsapp\.com\/send)\/?\??(?:phone=)?(\d+)?(?:[?&]text=([^&]*))?/i);
+  if (wa) return { t: 'wa', v: wa[1] || '', m: wa[2] ? decodeURIComponent(wa[2].replace(/\+/g, ' ')) : '' };
+  if (/^#/.test(h)) return { t: 'sec', v: h.slice(1) };
+  if (/^mailto:/i.test(h)) return { t: 'mail', v: h.replace(/^mailto:/i, '') };
+  return { t: 'url', v: h };
+}
+function wireLink(a) {
+  const type = $('#lkType'), wrap = $('#lkValWrap');
+  const draw = () => {
+    const p = parseLink(a.getAttribute('href') || '');
+    const t = type.value, same = p.t === t;
+    if (t === 'tel') wrap.innerHTML = `<input class="fld" id="lkV" inputmode="tel" placeholder="Phone number" value="${esc(same ? p.v : '')}">`;
+    if (t === 'wa') wrap.innerHTML = `<input class="fld" id="lkV" inputmode="tel" placeholder="WhatsApp number with 91" value="${esc(same ? p.v : '')}"><input class="fld" id="lkM" placeholder="Message they will send (optional)" value="${esc(same ? p.m || '' : '')}">`;
+    if (t === 'mail') wrap.innerHTML = `<input class="fld" id="lkV" inputmode="email" placeholder="Email address" value="${esc(same ? p.v : '')}">`;
+    if (t === 'url') wrap.innerHTML = `<input class="fld" id="lkV" inputmode="url" placeholder="https://…" value="${esc(same ? p.v : '')}">`;
+    if (t === 'sec') wrap.innerHTML = `<select class="fld" id="lkV">${blocks().filter(b => b.el.id).map(b => `<option value="${esc(b.el.id)}" ${same && p.v === b.el.id ? 'selected' : ''}>${esc(b.name)}</option>`).join('')}</select>`;
+    wrap.querySelectorAll('input,select').forEach(i => i.addEventListener('change', save));
+  };
+  const save = () => {
+    const t = type.value, v = (($('#lkV') || {}).value || '').trim(); let href = '';
+    if (t === 'tel') href = 'tel:' + v.replace(/[^\d+]/g, '');
+    if (t === 'wa') { let n = v.replace(/\D/g, ''); if (n.length === 10) n = '91' + n; const m = (($('#lkM') || {}).value || '').trim(); href = 'https://wa.me/' + n + (m ? '?text=' + encodeURIComponent(m) : ''); }
+    if (t === 'mail') href = 'mailto:' + v;
+    if (t === 'url') href = /^https?:\/\//i.test(v) ? v : (v ? 'https://' + v : '');
+    if (t === 'sec') href = '#' + v;
+    if (href) { a.setAttribute('href', href); if (t === 'url') { a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener'); } else a.removeAttribute('target'); commit(); toast('Link updated'); }
+  };
+  type.addEventListener('change', () => { draw(); });
+  draw();
+}
+
+/* ---------------- photos: pick, resize, upload ---------------- */
+function choosePhoto(done) {
+  const fi = $('#fileIn'); fi.value = '';
+  fi.onchange = async () => {
+    const f = fi.files && fi.files[0]; if (!f) return;
+    const stop = busy('Uploading your photo…');
+    try { const data = await resize(f); const r = await api('upload', { data }); if (!r.ok) throw new Error(r.error || 'Upload failed'); await done(r.path); toast('Photo changed'); }
+    catch (e) { toast('⚠️ ' + esc(e.message)); }
+    finally { stop(); }
+  };
+  fi.click();
+}
+function resize(file, max = 1600) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file), im = new Image();
+    im.onload = () => { const s = Math.min(1, max / Math.max(im.width, im.height)); const c = document.createElement('canvas'); c.width = Math.round(im.width * s); c.height = Math.round(im.height * s); const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg', 0.84)); };
+    im.onerror = () => { URL.revokeObjectURL(url); rej(new Error('This photo could not be opened. Try a JPG or PNG.')); };
+    im.src = url;
+  });
+}
+
+/* ---------------- SECTIONS tab ---------------- */
+function blocks() {
+  const d = D(); if (!d) return [];
+  const out = [], seen = new Set();
+  const add = el => { if (seen.has(el)) return; seen.add(el); out.push({ el, name: blockName(el) }); };
+  const skip = n => /^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE|LINK|META|BASE)$/.test(n.tagName) || n.hasAttribute('data-amuwa-ui');
+  for (const c of d.body.children) {
+    if (skip(c)) continue;
+    if (c.tagName === 'MAIN') { for (const m of c.children) if (!skip(m)) add(m); } else add(c);
+  }
+  return out;
+}
+function blockName(el) {
+  const hd = el.querySelector('h1,h2,h3');
+  const t = (hd && hd.textContent.trim()) || el.getAttribute('aria-label') || el.id || el.tagName.toLowerCase();
+  const pre = el.tagName === 'HEADER' ? 'Top bar · ' : el.tagName === 'FOOTER' ? 'Bottom · ' : el.tagName === 'NAV' ? 'Menu · ' : '';
+  return (pre + t).replace(/\s+/g, ' ').slice(0, 48);
+}
+function tabSections() {
+  const bl = blocks();
+  pBody.innerHTML = `<p class="hint" style="margin-top:0">Tap a name to jump to it. Use the arrows to change the order.</p>
+    <div class="list" id="secList">${bl.map((b, i) => `<div class="item ${b.el.style.display === 'none' ? 'off' : ''}" data-i="${i}">
+      <button class="nm" data-go="${i}">${esc(b.name)}</button>
+      <button class="ib" data-up="${i}" aria-label="Move up">${I.up}</button>
+      <button class="ib" data-dn="${i}" aria-label="Move down">${I.down}</button>
+      <button class="ib" data-hide="${i}" aria-label="Hide or show">${b.el.style.display === 'none' ? I.eyeoff : I.eye}</button>
+      <button class="ib" data-dup="${i}" aria-label="Copy">${I.copy}</button>
+    </div>`).join('')}</div>
+    <label class="lab">Add a new section</label>
+    <div class="tpl" id="tpl">${TEMPLATES.map((t, i) => `<button data-t="${i}">${esc(t.name)}<small>${esc(t.desc)}</small></button>`).join('')}
+      <button data-ai="1">✨ Something else<small>Describe it and AI builds it</small></button></div>`;
+  const B = i => bl[+i].el;
+  pBody.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { const el = B(b.dataset.go); el.scrollIntoView({ behavior: 'smooth', block: 'start' }); pick(el); }));
+  pBody.querySelectorAll('[data-up]').forEach(b => b.addEventListener('click', () => { move(B(b.dataset.up), -1); tabSections(); }));
+  pBody.querySelectorAll('[data-dn]').forEach(b => b.addEventListener('click', () => { move(B(b.dataset.dn), 1); tabSections(); }));
+  pBody.querySelectorAll('[data-hide]').forEach(b => b.addEventListener('click', () => { const el = B(b.dataset.hide); el.style.display = el.style.display === 'none' ? '' : 'none'; commit(); tabSections(); toast(el.style.display === 'none' ? 'Hidden from your website' : 'Showing again'); }));
+  pBody.querySelectorAll('[data-dup]').forEach(b => b.addEventListener('click', () => { const el = B(b.dataset.dup), c = el.cloneNode(true); c.querySelectorAll('[id]').forEach(n => n.id += '-copy'); if (c.id) c.id += '-copy'; el.after(c); commit(); tabSections(); toast('Section copied'); }));
+  pBody.querySelectorAll('[data-t]').forEach(b => b.addEventListener('click', () => addSection(TEMPLATES[+b.dataset.t])));
+  pBody.querySelector('[data-ai]').addEventListener('click', () => { openTab('ai'); const t = $('#aiIn'); if (t) { t.value = 'Add a new section after the ' + (sel ? blockName(sel.closest('section,header,footer') || sel) : 'services') + ' about: '; t.focus(); } });
+}
+function siteHints() {
+  const d = D();
+  const btn = d.querySelector('a.btn-primary,a[class*="btn-pri"],a.btn,a[class*="cta"],button[class*="btn"]');
+  const tel = d.querySelector('a[href^="tel:"]'), wa = d.querySelector('a[href*="wa.me"],a[href*="api.whatsapp.com"]');
+  let accent = '#E31E24', accentInk = '#ffffff';
+  if (btn) { const s = cs(btn); accent = rgb2hex(s.backgroundColor) || accent; accentInk = rgb2hex(s.color) || accentInk; }
+  const h2 = d.querySelector('h2'); const h2c = h2 ? h2.className : '';
+  return { btnClass: btn ? btn.className.replace(/\b(btn-block|btn-sm|hdr-cta)\b/g, '').trim() : '', accent, accentInk, tel: tel ? tel.getAttribute('href') : 'tel:', wa: wa ? (wa.getAttribute('href') || '').split('?')[0] : 'https://wa.me/', h2c };
+}
+const PH = "data:image/svg+xml;charset=utf-8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="#e9ecf1"/><text x="400" y="310" font-family="Arial" font-size="34" fill="#6b7280" text-anchor="middle">Tap to add your photo</text></svg>');
+const WRAP = 'max-width:var(--maxw,1120px);margin:0 auto;padding:0 var(--pad,20px)';
+const TEMPLATES = [
+  { name: 'Text block', desc: 'Heading + a few lines', html: h => `<section style="padding:64px 0"><div style="${WRAP}"><h2 class="${h.h2c}">Your heading here</h2><p style="max-width:62ch;font-size:17px;line-height:1.6">Write a few lines here. Tap this text to change it.</p></div></section>` },
+  { name: 'Offer banner', desc: 'Big coloured offer strip', html: h => `<section style="padding:44px 0;background:${h.accent};color:${h.accentInk}"><div style="${WRAP};text-align:center"><p style="margin:0 0 6px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:13px;opacity:.85">Special offer</p><h2 style="margin:0 0 12px;color:inherit">Write your offer here</h2><p style="margin:0 0 18px;color:inherit">Valid till … · Conditions apply</p><a href="${h.wa}" style="display:inline-block;padding:14px 22px;border-radius:999px;background:${h.accentInk};color:${h.accent};font-weight:700;text-decoration:none">Claim on WhatsApp</a></div></section>` },
+  { name: 'Photo + text', desc: 'Photo beside a short story', html: h => `<section style="padding:64px 0"><div style="${WRAP};display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:28px;align-items:center"><img src="${PH}" alt="" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:16px"><div><h2 class="${h.h2c}">Your heading here</h2><p style="font-size:17px;line-height:1.6">Tell your customers something about this. Tap to change.</p></div></div></section>` },
+  { name: 'Photo gallery', desc: '3 photos in a row', html: h => `<section style="padding:64px 0"><div style="${WRAP}"><h2 class="${h.h2c}">Our work</h2><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px">${[1, 2, 3].map(() => `<img src="${PH}" alt="" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px">`).join('')}</div></div></section>` },
+  { name: 'Customer words', desc: 'Quote from a real customer', html: h => `<section style="padding:64px 0"><div style="${WRAP}"><blockquote style="margin:0;max-width:62ch;font-size:22px;line-height:1.45">“Write what a real customer said about you.”</blockquote><p style="margin-top:12px;font-weight:700">— Customer name</p></div></section>` },
+  { name: 'Call & WhatsApp', desc: 'Contact strip with buttons', html: h => `<section style="padding:52px 0"><div style="${WRAP};text-align:center"><h2 class="${h.h2c}">Questions? Talk to us</h2><p>We reply quickly on call and WhatsApp.</p><div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px"><a href="${h.tel}" class="${h.btnClass}" style="${h.btnClass ? '' : 'display:inline-block;padding:14px 22px;border-radius:999px;background:' + h.accent + ';color:' + h.accentInk + ';font-weight:700;text-decoration:none'}">Call now</a><a href="${h.wa}" style="display:inline-block;padding:14px 22px;border-radius:999px;background:#25D366;color:#fff;font-weight:700;text-decoration:none">WhatsApp us</a></div></div></section>` },
+  { name: 'Questions & answers', desc: 'Tap-to-open FAQ', html: h => `<section style="padding:64px 0"><div style="${WRAP}"><h2 class="${h.h2c}">Questions</h2>${[1, 2, 3].map(n => `<details style="border-bottom:1px solid rgba(0,0,0,.12);padding:14px 0"><summary style="font-weight:700;cursor:pointer">Question ${n}?</summary><p style="margin:10px 0 0">Your answer here.</p></details>`).join('')}</div></section>` },
+  { name: 'YouTube video', desc: 'Show a video', video: true, html: h => `<section style="padding:64px 0"><div style="${WRAP}"><h2 class="${h.h2c}">Watch</h2><div style="position:relative;aspect-ratio:16/9;border-radius:16px;overflow:hidden;background:#000"><iframe src="https://www.youtube.com/embed/VIDEO_ID" title="Video" loading="lazy" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe></div></div></section>` }
+];
+function addSection(t) {
+  stopEditing();
+  let vid = '';
+  if (t.video) { vid = (prompt('Paste the YouTube link') || '').trim(); const m = vid.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{6,})/); if (!m) { toast('That YouTube link did not work'); return; } vid = m[1]; }
+  const d = D(), wrap = d.createElement('div');
+  wrap.innerHTML = t.html(siteHints()).replace('VIDEO_ID', vid);
+  const node = wrap.firstElementChild;
+  let after = sel && (sel.closest('section,header') || null);
+  if (!after) { const bl = blocks(); const foot = bl.find(b => b.el.tagName === 'FOOTER'); if (foot) foot.el.before(node); else (d.querySelector('main') || d.body).appendChild(node); }
+  else after.after(node);
+  commit(); node.scrollIntoView({ behavior: 'smooth', block: 'center' }); pick(node.querySelector('h2,blockquote,img') || node);
+  toast('Section added · tap it to change the words');
+}
+
+/* ---------------- THEME tab ---------------- */
+const FONTS = ['Inter', 'Poppins', 'Montserrat', 'DM Sans', 'Manrope', 'Archivo', 'Rubik', 'Nunito', 'Mukta', 'Hind', 'Baloo 2', 'Playfair Display', 'Fraunces', 'Lora', 'Merriweather', 'Cormorant Garamond', 'Instrument Serif', 'Oswald', 'Bebas Neue', 'Big Shoulders Display', 'Space Grotesk', 'IBM Plex Sans', 'Open Sans', 'Roboto'];
+function rootVars() {
+  const d = D(), out = [];
+  const txt = [...d.querySelectorAll('style')].filter(s => s.id !== 'amuwa-editor-css').map(s => s.textContent).join('\n');
+  const m = txt.match(/:root\s*\{([^}]*)\}/); if (!m) return out;
+  const seen = new Set();
+  for (const mm of m[1].matchAll(/(--[\w-]+)\s*:\s*([^;]+)/g)) { if (seen.has(mm[1])) continue; seen.add(mm[1]); out.push({ name: mm[1], raw: mm[2].trim() }); }
+  return out;
+}
+function niceName(v) {
+  const map = { 'f-display': 'Headings font', 'f-body': 'Text font', 'f-serif': 'Quote font', 'f-mono': 'Label font', ink: 'Main text', paper: 'Page background', bg: 'Page background', accent: 'Accent', primary: 'Main colour' };
+  const k = v.replace(/^--/, ''); return map[k] || k.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+function tabTheme() {
+  const d = D(), root = d.documentElement, vars = rootVars();
+  const colours = [], fonts = [];
+  for (const v of vars) {
+    if (/^--f-|font/i.test(v.name) && /["',]/.test(v.raw)) { fonts.push(v); continue; }
+    if (/var\(/.test(v.raw)) continue;
+    const probe = d.createElement('i'); probe.style.color = v.raw; if (!probe.style.color) continue;
+    probe.style.display = 'none'; d.body.appendChild(probe); const hx = rgb2hex(frame.contentWindow.getComputedStyle(probe).color); probe.remove();
+    if (!hx) continue;
+    const curr = root.style.getPropertyValue(v.name).trim();
+    colours.push({ name: v.name, hex: curr && /^#/.test(curr) ? curr : hx });
+  }
+  pBody.innerHTML = `<p class="hint" style="margin-top:0">These colours and fonts are used across your whole website.</p>
+    ${colours.length ? `<label class="lab">Colours</label><div class="row">${colours.map(c => `<label class="sw"><input type="color" data-var="${c.name}" value="${c.hex}">${esc(niceName(c.name))}</label>`).join('')}</div>` : '<p class="hint">This website has no theme colours to change. Tap any part to change its colour.</p>'}
+    ${fonts.map(f => { const cur = (root.style.getPropertyValue(f.name) || f.raw).split(',')[0].replace(/["']/g, '').trim(); return `<label class="lab">${esc(niceName(f.name))}</label><select class="fld" data-font="${f.name}">${[cur, ...FONTS.filter(x => x !== cur)].map(n => `<option ${n === cur ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select>`; }).join('')}
+    <div class="row" style="margin-top:16px"><button class="btn" id="resetTheme">Reset to original colours & fonts</button></div>`;
+  pBody.querySelectorAll('[data-var]').forEach(i => { i.addEventListener('input', () => root.style.setProperty(i.dataset.var, i.value)); i.addEventListener('change', () => commit()); });
+  pBody.querySelectorAll('[data-font]').forEach(s => s.addEventListener('change', () => {
+    const name = s.value, v = vars.find(x => x.name === s.dataset.font), fallback = v.raw.split(',').slice(1).join(',') || 'sans-serif';
+    root.style.setProperty(s.dataset.font, `"${name}",${fallback}`);
+    let lk = d.getElementById('amuwa-fonts');
+    const fams = new Set((lk ? new URL(lk.href).searchParams.get('family') || '' : '').split('|').filter(Boolean)); fams.add(name.replace(/ /g, '+') + ':400,500,600,700,800');
+    if (!lk) { lk = d.createElement('link'); lk.id = 'amuwa-fonts'; lk.rel = 'stylesheet'; d.head.appendChild(lk); }
+    lk.href = 'https://fonts.googleapis.com/css?family=' + [...fams].join('|') + '&display=swap';
+    commit(); toast('Font changed');
+  }));
+  $('#resetTheme').addEventListener('click', () => { root.removeAttribute('style'); const lk = d.getElementById('amuwa-fonts'); if (lk) lk.remove(); commit(); tabTheme(); toast('Back to the original look'); });
+}
+
+/* ---------------- PHOTOS tab ---------------- */
+function photosScript() { const d = D(); return [...d.querySelectorAll('script')].find(s => /window\.SITE_PHOTOS\s*=/.test(s.textContent)); }
+function readPhotos() {
+  const s = photosScript(); if (!s) return null;
+  const m = s.textContent.match(/window\.SITE_PHOTOS\s*=\s*(\{[\s\S]*\})\s*;?\s*$/m) || s.textContent.match(/window\.SITE_PHOTOS\s*=\s*(\{[\s\S]*?\});/);
+  if (!m) return null; try { return { s, data: JSON.parse(m[1]), raw: m[0] }; } catch (e) { return null; }
+}
+function writePhotos(p) { p.s.textContent = p.s.textContent.replace(p.raw, 'window.SITE_PHOTOS=' + JSON.stringify(p.data) + ';'); }
+const srcOf = x => typeof x === 'string' ? x : (x && x.src) || '';
+const GROUPS = { hero: 'Top slideshow', offer: 'Services background', events: 'Packages background', gallery: 'Photo gallery' };
+function tabPhotos() {
+  const d = D(), p = readPhotos();
+  const imgs = [...d.querySelectorAll('img')].filter(i => !i.closest('[data-amuwa-ui]'));
+  let h = '';
+  if (p && p.data.plan) {
+    for (const g of Object.keys(GROUPS)) {
+      const list = p.data.plan[g]; if (!Array.isArray(list)) continue;
+      h += `<label class="lab">${GROUPS[g]}</label><div class="thumbs">${list.map((x, i) => `<div class="th"><img src="${esc(BASE + srcOf(x))}" alt="" loading="lazy"><div class="acts"><button data-g="${g}" data-rep="${i}">Change</button><button data-g="${g}" data-rm="${i}">Remove</button></div></div>`).join('')}<button class="th add" data-g="${g}" data-add="1">+ Add photo</button></div>`;
+    }
+    h += `<p class="hint" style="margin-top:10px">These photos appear when your website is open (the editor shows them here).</p>`;
+  }
+  h += `<label class="lab">Photos on the page</label>${imgs.length ? `<div class="thumbs">${imgs.map((im, i) => `<div class="th"><img src="${esc(im.src)}" alt="" loading="lazy"><div class="acts"><button data-pi="${i}">Change</button><button data-go="${i}">Find</button></div></div>`).join('')}</div>` : '<p class="hint">No photos on the page yet. Add a "Photo + text" or "Photo gallery" section from Sections.</p>'}`;
+  pBody.innerHTML = h;
+  pBody.querySelectorAll('[data-rep]').forEach(b => b.addEventListener('click', () => choosePhoto(async path => { const q = readPhotos(); q.data.plan[b.dataset.g][+b.dataset.rep] = path; swapAlt(q, path); writePhotos(q); commit(); tabPhotos(); })));
+  pBody.querySelectorAll('[data-rm]').forEach(b => b.addEventListener('click', () => { const q = readPhotos(); q.data.plan[b.dataset.g].splice(+b.dataset.rm, 1); writePhotos(q); commit(); tabPhotos(); toast('Photo removed'); }));
+  pBody.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => choosePhoto(async path => { const q = readPhotos(); q.data.plan[b.dataset.g].push(path); swapAlt(q, path); writePhotos(q); commit(); tabPhotos(); })));
+  pBody.querySelectorAll('[data-pi]').forEach(b => b.addEventListener('click', () => { const im = imgs[+b.dataset.pi]; choosePhoto(async path => { im.setAttribute('src', path); im.removeAttribute('srcset'); commit(); tabPhotos(); }); }));
+  pBody.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { const im = imgs[+b.dataset.go]; im.scrollIntoView({ behavior: 'smooth', block: 'center' }); pick(im); }));
+}
+function swapAlt(q, path) { if (q.data.alts && typeof q.data.alts === 'object') q.data.alts[path] = (BUSINESS ? BUSINESS + ' – ' : '') + 'photo'; }
+
+/* ---------------- AI tab ---------------- */
+const EXAMPLES = ['Change our timings to 10 am – 9 pm, all 7 days', 'Add a Diwali offer: 10% off on modular kitchens till 31 Oct', 'Make the top heading shorter and bolder', 'Change the colour theme to dark green and gold', 'Add our Instagram link in the footer', 'Translate the top section to Hindi'];
+let aiLast = '';
+function tabAI() {
+  pBody.innerHTML = `<p class="hint" style="margin-top:0">Type what you want, in English or Hindi. AI changes your website, then you can check it and press Publish.</p>
+    <textarea class="fld" id="aiIn" placeholder="Example: Add a new service — Bathroom renovation, starting ₹45,000">${esc(aiLast)}</textarea>
+    <div class="row" style="margin-top:10px"><button class="btn red full" id="aiGo">✨ Make the change</button></div>
+    <label class="lab">Ideas</label><div class="row">${EXAMPLES.map(e => `<button class="chip">${esc(e)}</button>`).join('')}</div>
+    <div id="aiOut"></div>`;
+  pBody.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => { $('#aiIn').value = c.textContent; $('#aiIn').focus(); }));
+  $('#aiGo').addEventListener('click', runAI);
+}
+async function runAI() {
+  const txt = $('#aiIn').value.trim(); if (txt.length < 4) { toast('Please type what you want to change'); return; }
+  aiLast = txt; stopEditing(); commit();
+  const stop = busy('AI is changing your website… (about 30–60 seconds)');
+  try {
+    const r = await api('ai', { instruction: txt, html: current });
+    if (r.ok && r.html) {
+      undoS.push(current); redoS.length = 0; current = r.html; await render(current, true); afterChange();
+      aiLast = ''; tabAI(); $('#aiOut').innerHTML = `<div class="ai-msg ok">✅ ${esc(r.summary || 'Done.')} <br><b>Check it on the left/above.</b> Not right? Tap Undo.</div>`;
+    } else {
+      $('#aiOut').innerHTML = `<div class="ai-msg">${esc(r.summary || r.error || 'AI could not make this change. Try saying it differently.')}</div>`;
+    }
+  } catch (e) { $('#aiOut').innerHTML = `<div class="ai-msg err">⚠️ ${esc(e.message)}</div>`; }
+  finally { stop(); }
+}
+
+/* ---------------- HISTORY tab ---------------- */
+async function tabHistory() {
+  pBody.innerHTML = `<p class="hint" style="margin-top:0">Every time you publish, a copy is saved. You can go back to any of them.</p><div class="list" id="vList"><div class="item"><div class="spin dark"></div><span class="hint" style="margin:0">Loading…</span></div></div>`;
+  try {
+    const r = await api('versions');
+    const L = (r.versions || []);
+    if (!L.length) { $('#vList').innerHTML = '<p class="hint">No saved versions yet.</p>'; return; }
+    $('#vList').innerHTML = L.map((v, i) => `<div class="ver"><div><b>${i === 0 ? 'Live now · ' : ''}${esc(fmtDate(v.date))}</b><small>${esc(v.message.split('\n')[0])}</small></div>${i === 0 ? '' : `<button class="btn sm" data-sha="${esc(v.sha)}">Use this</button>`}</div>`).join('');
+    pBody.querySelectorAll('[data-sha]').forEach(b => b.addEventListener('click', async () => {
+      const stop = busy('Opening that version…');
+      try { const v = await api('version', { sha: b.dataset.sha }); if (!v.html) throw new Error('Could not open it'); undoS.push(current); redoS.length = 0; current = v.html; await render(current, false); afterChange(); toast('Old version opened · press Publish to make it live'); }
+      catch (e) { toast('⚠️ ' + esc(e.message)); } finally { stop(); }
+    }));
+  } catch (e) { $('#vList').innerHTML = `<div class="ai-msg err">⚠️ ${esc(e.message)}</div>`; }
+}
+function fmtDate(s) { try { return new Date(s).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }); } catch (e) { return s; } }
+
+/* ---------------- top bar ---------------- */
+$('#undoBtn').addEventListener('click', undo);
+$('#redoBtn').addEventListener('click', redo);
+$('#viewBtn').addEventListener('click', () => {
+  previewMode = !previewMode; stopEditing(); pick(null);
+  $('#viewBtn').setAttribute('aria-pressed', previewMode); $('#viewBtn').style.background = previewMode ? 'rgba(255,255,255,.28)' : '';
+  const d = D(); if (d) d.documentElement.classList.toggle('amuwa-preview', previewMode);
+  if (previewMode) { panel.classList.remove('open'); toast('Preview: this is how visitors see it. Tap Preview again to edit.'); }
+});
+if (matchMedia('(min-width:900px)').matches) { $('#deviceBtn').classList.remove('hidden'); $('#deviceBtn').addEventListener('click', () => $('#stage').classList.toggle('phone')); }
+$('#pubBtn').addEventListener('click', publish);
+async function publish() {
+  stopEditing(); commit();
+  if (current === published) { toast('No new changes to publish'); return; }
+  const stop = busy('Publishing your website…');
+  try {
+    await api('save', { html: current, message: 'Edited by owner in website editor' });
+    published = current; afterChange(); store.del(DRAFT);
+    toast(`✅ Published! Live in about a minute · <a href="${esc(LIVE)}" target="_blank" rel="noopener">Open website</a>`, 6000);
+  } catch (e) { toast('⚠️ ' + esc(e.message), 5000); }
+  finally { stop(); }
+}
+addEventListener('beforeunload', e => { if (current && current !== published) { e.preventDefault(); e.returnValue = ''; } });
+addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); } });
+
+/* ---------------- start ---------------- */
+(async function start() {
+  if (!TOKEN) return fail('This link is missing its key.', 'Please open the edit link exactly as Amuwa sent it on WhatsApp.');
+  try {
+    const r = await api('load');
+    if (!r.ok || !r.html) return fail('We could not open your website.', r.error || 'Please message Amuwa on WhatsApp.');
+    BASE = r.base_url; LIVE = r.live_url; BUSINESS = r.business || '';
+    $('#bizName').textContent = BUSINESS; document.title = 'Edit · ' + BUSINESS;
+    published = current = r.html;
+    const dr = store.get(DRAFT);
+    await render(current, false);
+    afterChange();
+    $('#cover').remove();
+    openTab('edit'); if (!isDesk()) panel.classList.add('open');
+    if (dr && dr.html && dr.html !== current) {
+      const b = document.createElement('div'); b.className = 'banner';
+      b.innerHTML = `<b>You have unpublished changes</b> from ${esc(fmtDate(dr.at))}.<div class="row" style="margin:10px 0 0"><button class="btn pri sm" id="drUse">Continue editing</button><button class="btn sm" id="drNo">Discard</button></div>`;
+      document.body.appendChild(b);
+      $('#drUse').onclick = async () => { b.remove(); undoS.push(current); current = dr.html; await render(current, false); afterChange(); };
+      $('#drNo').onclick = () => { b.remove(); store.del(DRAFT); };
+    }
+  } catch (e) { fail('We could not open your website.', e.message); }
+})();
+function fail(h, p) { const c = $('#cover'); c.innerHTML = `<h1>${esc(h)}</h1><p>${esc(p)}</p>`; }
+})();
+</script>
+</body>
+</html>
